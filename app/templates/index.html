@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Threat Normalizer AI</title>
+<style>
+body { font-family: Arial; background:#0d0d0d; color:#fff; padding:20px; }
+textarea { width:100%; height:120px; }
+button { padding:10px; margin-top:10px; cursor:pointer; }
+.card { padding:10px; margin-top:10px; border-radius:8px; white-space:pre-wrap; }
+.low { background:#003300; }
+.medium { background:#665500; }
+.high { background:#660000; }
+.critical { background:#7a0000; border:2px solid #ff3333; }
+</style>
+</head>
+<body>
+
+<h2>⚡ Threat Normalizer AI Dashboard</h2>
+
+<textarea id="raw"></textarea><br>
+<button onclick="send()">Normalize Log</button>
+
+<h3>Upload Log File (.txt)</h3>
+<input id="file" type="file" accept=".txt">
+<button onclick="uploadFile()">Upload</button>
+
+<h3>Live Stream</h3>
+<div id="stream"></div>
+
+<script>
+async function send(){
+    let raw = document.getElementById("raw").value;
+    let res = await fetch("/api/normalize", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({raw})
+    });
+    let data = await res.json();
+    addCard(data);
+}
+
+async function uploadFile(){
+    let f = document.getElementById("file").files[0];
+    let form = new FormData();
+    form.append("file", f);
+
+    await fetch("/api/upload",{method:"POST",body:form});
+    alert("Uploaded and processed!");
+}
+
+function addCard(data){
+    let div = document.createElement("div");
+    div.className = "card " + data.severity;
+    div.innerText = JSON.stringify(data, null, 2);
+    document.getElementById("stream").prepend(div);
+}
+
+let evt = new EventSource("/stream");
+evt.onmessage = (e)=>addCard(JSON.parse(e.data));
+</script>
+
+</body>
+</html>
